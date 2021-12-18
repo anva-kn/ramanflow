@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Jun 20 11:55:07 2021
-
-@author: rinis
-"""
-
 import numpy as np
 from scipy.optimize import minimize
 from scipy.signal import chirp, find_peaks, peak_widths

@@ -5,7 +5,6 @@ import sys
 sys.path.insert(0, '/home/dtos/Coding/ramanflow/utils')
 sys.path.insert(0, '/home/dtos/Coding/ramanflow/models')
 sys.path.insert(0, '/home/dtos/Coding/ramanflow/test_data')
-
 from loss_functions import Loss
 from fit_functions import Fit
 from background import Background
@@ -16,6 +15,8 @@ import scipy.signal as sci
 import pandas as pd
 import numpy as np
 
+import matplotlib
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 from math import pi
 import math
@@ -36,7 +37,6 @@ f_sup = np.arange(0, 2400, 2)
 #g = data_m["gly"] - data_m["water"]
 
 y_data = test_data[1]
-
 # normalize to 0/1
 y_data = (y_data - np.min(y_data)) / (np.max(y_data) - np.min(y_data))
 x_data = f_sup
@@ -61,12 +61,10 @@ x = x_data.copy()
 # initialize the background
 background_model.init(x, y)
 
-# TODO change to  background_model.max_loss*2*np.ones(2)
 interpol_err = [1000, 1000]
 
 interpol_pos = [0, res - 1]
 
-# this value should get smaller as time goes by
 slide_win = 18
 min_pos = 0
 while (min_pos + 1) - res < -1:
