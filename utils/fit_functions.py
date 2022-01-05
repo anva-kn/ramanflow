@@ -97,11 +97,3 @@ class Fit:
         d = 2
         return [M / (1 + (abs((x_data[i] - c) / sgs)) ** d) for i in range(x_data.size)]
 
-
-    # dictionary = get_beta
-    # { 'pseudo_voig',4}
-    
-    # def get_num_beta(name):
-        
-    #     return dict(name)
-        
