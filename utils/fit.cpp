@@ -3,8 +3,12 @@
 #include <math.h>
 #include <algorithm>
 #include <iterator>
+#include <pybind11.h>
+#include <stl.h>
+#include <operators.h>
+#include <numpy.h>
 
-// namespace py = pybind11;
+namespace py = pybind11;
 
 
 void PrintMap(std::map<std::string, int>& m)
@@ -48,9 +52,9 @@ std::vector<double> Fit :: PseudoVoight(std::vector<double> x_data, std::vector<
     return result;
 }
 
-std::array<double, 4> Fit :: InitPseudoVoight(std::vector<double> x_data, std::vector<double> y_data)
+std::vector<double> Fit :: InitPseudoVoight(std::vector<double> &x_data, std::vector<double> &y_data)
 {
-    std::array<double, 4> beta_init_lor = {};
+    std::vector<double> beta_init_lor = {};
     std::vector<double>::iterator max_element = std::max_element(y_data.begin(), y_data.end());
     int argmaxVal = std::distance(y_data.begin(), max_element);
     beta_init_lor[0] = *std::max_element(y_data.begin(), y_data.end());
@@ -105,17 +109,19 @@ std::vector<double> Fit :: LorentzAmplitude(std::vector<double> x_data, std::vec
     return result;
 }
 
-// PYBIND11_MODULE(_fit, myFit) {
-//   myfit.def("poly4_cpp", &PolyBiquadratic);
-//   myfit.def("init_poly_cpp", &InitPolyBiquadratic);
-//   myfit.def("pseudo_voight_cpp", &PseudoVoight);
-//   myfit.def("init_pseudo_voight_cpp", &InitPseudoVoight);
-//   myfit.def("gauss_amp_cpp" &GaussianAmplitude);
-//   myfit.def("gen_lor_amp_cpp", &GeneralizedLorentz);
-//   myfit.def("lor_amp_cpp", &LorentzAmplitude)
-//   // py::class_<Fit>(myfit, "Fit_cpp")
-//   //     .def("get_beta_params_cpp", &GetBetaParams);
-// }
+ PYBIND11_MODULE(fit, myFit) {
+   py::class_<Fit>(myFit, "Fit")
+        .def(py::init<>())
+	.def("get_beta_params_cpp", &Fit::GetBetaParams)
+	//.def("poly4_cpp", &Fit::PolyBiquadratic)
+	//.def("init_poly_cpp", &Fit::InitPolyBiquadratic)
+	.def("pseudo_voight_cpp", &Fit::PseudoVoight)
+	.def("init_pseudo_voight_cpp", &Fit::InitPseudoVoight)
+	//.def("gauss_amp_cpp" &Fit::GaussianAmplitude)
+	.def("gen_lor_amp_cpp", &Fit::GeneralizedLorentz)
+	.def("lor_amp_cpp", &Fit::LorentzAmplitude);
+
+ }
 
 
 //
