@@ -11,26 +11,18 @@
 namespace py = pybind11;
 
 
-void PrintMap(std::map<std::string, int>& m)
+std::vector<double> Fit :: PolyBiquadratic(std::vector<double> x_data, std::array<double, 4> beta)
 {
-    std::cout << "[ ";
-    for (auto &item : m)
-    {
-        std::cout << item.first << ":" << item.second << " ";
-    }
-    std::cout << "]\n";
+    p = np.poly1d(beta)
+    return p(x_data)
 }
 
-// std::vector<double> Fit :: PolyBiquadratic(std::vector<double> x_data, std::array<double, 4> beta)
-// {
-//
-// }
-//
-//
-// std::vector<double> Fit :: InitPolyBiquadratic(std::vector<double> x_data, std::vector<double> y_data)
-// {
-//
-// }
+
+std::vector<double> Fit :: InitPolyBiquadratic(std::vector<double> x_data, std::vector<double> y_data)
+{
+    beta_init = np.polyfit(x_data, y_data, 4)
+    return beta_init
+}
 
 std::vector<double> Fit :: PseudoVoight(std::vector<double> x_data, std::vector<double> beta)
 {
@@ -109,32 +101,32 @@ std::vector<double> Fit :: LorentzAmplitude(std::vector<double> x_data, std::vec
     return result;
 }
 
- PYBIND11_MODULE(fit, myFit) {
-   py::class_<Fit>(myFit, "Fit")
-        .def(py::init<>())
-	.def("get_beta_params_cpp", &Fit::GetBetaParams)
-	//.def("poly4_cpp", &Fit::PolyBiquadratic)
-	//.def("init_poly_cpp", &Fit::InitPolyBiquadratic)
-	.def("pseudo_voight_cpp", &Fit::PseudoVoight)
-	.def("init_pseudo_voight_cpp", &Fit::InitPseudoVoight)
-	//.def("gauss_amp_cpp" &Fit::GaussianAmplitude)
-	.def("gen_lor_amp_cpp", &Fit::GeneralizedLorentz)
-	.def("lor_amp_cpp", &Fit::LorentzAmplitude);
-
- }
-
-
+//  PYBIND11_MODULE(fit, myFit) {
+//    py::class_<Fit>(myFit, "Fit")
+//         .def(py::init<>())
+// 	.def("get_beta_params_cpp", &Fit::GetBetaParams)
+// 	//.def("poly4_cpp", &Fit::PolyBiquadratic)
+// 	//.def("init_poly_cpp", &Fit::InitPolyBiquadratic)
+// 	.def("pseudo_voight_cpp", &Fit::PseudoVoight)
+// 	.def("init_pseudo_voight_cpp", &Fit::InitPseudoVoight)
+// 	//.def("gauss_amp_cpp" &Fit::GaussianAmplitude)
+// 	.def("gen_lor_amp_cpp", &Fit::GeneralizedLorentz)
+// 	.def("lor_amp_cpp", &Fit::LorentzAmplitude);
 //
-// int main(void)
-// {
-//     Fit *myfit = new Fit();
-//     std::map<std::string, int> betaParameters = myfit->GetBetaParams();
-//     std::cout << "__beta_params map : ";
-//     myfit->PrintMap(betaParameters);
-//     std::cout <<std::endl;
-//     std::cout << betaParameters.size() << std::endl;
-//     // std::string key = std::string("poly4");
-//     std::cout << betaParameters[std::string("poly4")] << std::endl;
-//
-//     return EXIT_SUCCESS;
-// }
+//  }
+
+
+
+int main(void)
+{
+    Fit *myfit = new Fit();
+    std::map<std::string, int> betaParameters = myfit->GetBetaParams();
+    std::cout << "__beta_params map : ";
+    myfit->PrintMap(betaParameters);
+    std::cout <<std::endl;
+    std::cout << betaParameters.size() << std::endl;
+    // std::string key = std::string("poly4");
+    std::cout << betaParameters[std::string("poly4")] << std::endl;
+
+    return EXIT_SUCCESS;
+}
