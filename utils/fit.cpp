@@ -1,8 +1,11 @@
 #include "fit.hpp"
+#include "polynomial.hpp"
+#include <string>
 // #include "../extern/pybind11/include/pybind11/pybind11.h"
 #include <math.h>
 #include <algorithm>
 #include <iterator>
+#include <Python.h>
 #include <pybind11.h>
 #include <stl.h>
 #include <operators.h>
@@ -10,19 +13,37 @@
 
 namespace py = pybind11;
 
+using namespace std;
 
-std::vector<double> Fit :: PolyBiquadratic(std::vector<double> x_data, std::array<double, 4> beta)
+std::vector<double> Fit :: PolyBiquadratic(std::vector<double> x_data, double beta[])
 {
-    p = np.poly1d(beta)
-    return p(x_data)
+    int poly_size = int(x_data.size());
+//  polynomial_print(1, poly_size, beta);
+    double c[11];
+    double c1[6] = { 7.0, - 5.0, 9.0, 11.0, 0.0, - 13.0 };
+    double c2[5] = { 2.0, 3.0, -8.0, 4.0, 9.0 };
+    int m = 3;
+    int e[11];
+    int e1[6] = { 1, 2, 4, 5, 12, 33 };
+    int e2[5] = { 1, 3, 4, 30, 33 };
+    int o;
+    int o1 = 6;
+    int o2 = 5;
+    string title = "  P1(X) + P2(X) =";
+    string title1 = "  P1(X) =";
+    string title2 = "  P2(X) =";
+    cout << "\n";
+    polynomial_print ( m, o1, c1, e1, title1 );
+//  p = np.poly1d(beta)
+//  return p(x_data)
 }
 
 
-std::vector<double> Fit :: InitPolyBiquadratic(std::vector<double> x_data, std::vector<double> y_data)
-{
-    beta_init = np.polyfit(x_data, y_data, 4)
-    return beta_init
-}
+//std::vector<double> Fit :: InitPolyBiquadratic(std::vector<double> x_data, std::vector<double> y_data)
+//{
+//  beta_init = np.polyfit(x_data, y_data, 4)
+//  return beta_init
+//}
 
 std::vector<double> Fit :: PseudoVoight(std::vector<double> x_data, std::vector<double> beta)
 {
@@ -101,32 +122,32 @@ std::vector<double> Fit :: LorentzAmplitude(std::vector<double> x_data, std::vec
     return result;
 }
 
-//  PYBIND11_MODULE(fit, myFit) {
-//    py::class_<Fit>(myFit, "Fit")
-//         .def(py::init<>())
-// 	.def("get_beta_params_cpp", &Fit::GetBetaParams)
-// 	//.def("poly4_cpp", &Fit::PolyBiquadratic)
-// 	//.def("init_poly_cpp", &Fit::InitPolyBiquadratic)
-// 	.def("pseudo_voight_cpp", &Fit::PseudoVoight)
-// 	.def("init_pseudo_voight_cpp", &Fit::InitPseudoVoight)
-// 	//.def("gauss_amp_cpp" &Fit::GaussianAmplitude)
-// 	.def("gen_lor_amp_cpp", &Fit::GeneralizedLorentz)
-// 	.def("lor_amp_cpp", &Fit::LorentzAmplitude);
-//
-//  }
+PYBIND11_MODULE(fit, myFit) {
+    py::class_<Fit>(myFit, "Fit")
+    .def(py::init<>())
+//  .def("get_beta_params_cpp", &Fit::GetBetaParams)
+    .def("poly4_cpp", &Fit::PolyBiquadratic)
+    //.def("init_poly_cpp", &Fit::InitPolyBiquadratic)
+    .def("pseudo_voight_cpp", &Fit::PseudoVoight)
+    .def("init_pseudo_voight_cpp", &Fit::InitPseudoVoight)
+    //.def("gauss_amp_cpp" &Fit::GaussianAmplitude)
+    .def("gen_lor_amp_cpp", &Fit::GeneralizedLorentz)
+    .def("lor_amp_cpp", &Fit::LorentzAmplitude);
 
-
-
-int main(void)
-{
-    Fit *myfit = new Fit();
-    std::map<std::string, int> betaParameters = myfit->GetBetaParams();
-    std::cout << "__beta_params map : ";
-    myfit->PrintMap(betaParameters);
-    std::cout <<std::endl;
-    std::cout << betaParameters.size() << std::endl;
-    // std::string key = std::string("poly4");
-    std::cout << betaParameters[std::string("poly4")] << std::endl;
-
-    return EXIT_SUCCESS;
 }
+
+
+
+//int main(void)
+//{
+//  Fit *myfit = new Fit();
+//  std::map<std::string, int> betaParameters = myfit->GetBetaParams();
+//  std::cout << "__beta_params map : ";
+//  myfit->PrintMap(betaParameters);
+//  std::cout <<std::endl;
+//  std::cout << betaParameters.size() << std::endl;
+//  // std::string key = std::string("poly4");
+//  std::cout << betaParameters[std::string("poly4")] << std::endl;
+//
+//  return EXIT_SUCCESS;
+//}
