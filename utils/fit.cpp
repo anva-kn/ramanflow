@@ -1,6 +1,7 @@
 #include "fit.hpp"
-#include "polynomial.hpp"
+//#include "polynomial.hpp"
 #include <string>
+#include "poly1d.cpp"
 // #include "../extern/pybind11/include/pybind11/pybind11.h"
 #include <math.h>
 #include <algorithm>
@@ -13,93 +14,25 @@
 
 namespace py = pybind11;
 
-using namespace std;
-
-void Fit :: PolyBiquadratic(std::vector<double> x_data, double *beta, int order, std::vector<double> eval_pts)
+void Fit :: PolyBiquadratic(std::vector<double> x_data, std::vector<double> beta)
 {
-    int poly_size = int(x_data.size());
-    int ordr = order;
-    int exp[poly_size];
-    double x_data_arr[x_data.size()];
-    for (std::size_t i = 0; i < poly_size; i++)
+    Poly1d poly;
+    poly.init(beta);
+    int power = beta.size() - 1;
+   // std::cout << "Polynomial: " << std::endl;
+   // for (auto term : poly.getCoeffs())
+   // {
+   //     std::cout << term << "x^" << power  << " + ";
+   //     power--;
+   // }
+    std::vector<double> fit_result(x_data.size(), 0.0);
+    fit_result = poly.evaluate(x_data);
+    for (auto res : fit_result)
     {
-        exp[i] = poly_size - i;
-        x_data_arr[i] = x_data[i];
+        std::cout << res << " "; 
     }
-//  polynomial_print(1, poly_size, beta);
-//    double c[11];
-    double c1[6] = { 7.0, - 5.0, 9.0, 11.0, 0.0, - 13.0 };
-    double c2[5] = { 2.0, 3.0, -8.0, 4.0, 9.0 };
-    int m = 1;
-    int e[11];
-    int e1[6] = { 1, 2, 4, 5, 12, 33 };
-    int e2[5] = { 1, 3, 4, 30, 33 };
-    int o;
-    int o1 = 6;
-    int o2 = 5;
-    string title = "  P1(X) + P2(X) =";
-    string title1 = "  P1(X) =";
-    string title2 = "  P2(X) =";
-    cout << "\n";
-    cout << "ordr: " << ordr << endl;
-    cout << "poly_size: " << poly_size << endl;
-    cout << "x_data: ";
-    for (auto i : x_data)
-    {
-        cout << x_data[i] << " ";
-    }
-    cout << "exp: ";
-    for (int i = 0; i < sizeof(exp) / sizeof(exp[0]); i++)
-    {
-        cout << exp[i] << " ";
-    }
-    cout << endl;
-    cout << "m: " << m << endl;
-    cout << "o1: " << o1 << endl;
-    cout << "c1: ";
-    for (int i = 0; i < sizeof(c1) / sizeof(c1[0]); i++)
-    {
-        cout << c1[i] << " ";
-    }
-    cout << "e1: ";
-    for (int i = 0; i < sizeof(e1) / sizeof(e1[0]); i++)
-    {
-        cout << e1[i] << " ";
-    }
-    double *c, *p;
-    double points[eval_pts.size()];
-    double x[3*2] = {
-                    1.0, 2.0, 3.0,
-                    -2.0, 4.0, 1.0 };
-    polynomial_print(ordr, poly_size, x_data_arr, exp, title1);
-    c = polynomial_value(ordr, poly_size, x_data_arr, exp, 1, points);
-    cout << endl;
-    polynomial_print ( m, o1, c1, e1, title1 );
-    p = polynomial_value ( m, o, c, e, 2, x );
-
-    cout << "\n";
-    for (int j = 0; j < 2; j++ )
-    {
-        cout << "  P(" << x[0+j*m]
-        << "," << x[1+j*m]
-        << "," << x[2+j*m]
-        << ") = " << p[j] << "\n";
-    }
-
-    delete [] p;
-    //  p = np.poly1d(beta)
-    cout << "\n";
-    cout << "c: "
-    for (int j = 0; j < 4; j++ )
-    {
-        cout << c[j] << " ";
-    }
-
-    delete [] c;
-//  return p(x_data)
+    std::cout << std::endl;
 }
-
-
 //std::vector<double> Fit :: InitPolyBiquadratic(std::vector<double> x_data, std::vector<double> y_data)
 //{
 //  beta_init = np.polyfit(x_data, y_data, 4)

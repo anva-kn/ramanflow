@@ -7,4 +7,4 @@ include_dirs=-I/usr/include/pybind11/ \
 	       -I./
 
 defaults:
-	${comp} ${comp_flags} $$(python3 -m pybind --includes) polynomial.cpp fit.cpp -o fit$$(python3-config --extension-suffix) ${include_dirs}
+	${comp} ${comp_flags} $$(python3 -m pybind --includes) poly1d.cpp fit.cpp -o fit$$(python3-config --extension-suffix) ${include_dirs}

@@ -14,6 +14,11 @@ class Poly1d
 
         //============================================================================
         // Method Description:
+        std::vector<double> getCoeffs()
+        {
+            return coefficients_;
+        }
+
         void init (const std::vector<double>& inValues)
         {
             // std::vector<double> coefficients_;
@@ -29,7 +34,7 @@ class Poly1d
             
             for (int i = 0; i < inValues.size(); i++)
             {
-                int polyValue = 0;
+                double polyValue = 0.0;
                 int power = inValues.size() - 1;
                 for (auto coeff : coefficients_)
                 {
@@ -42,7 +47,10 @@ class Poly1d
             return result;
         }
             
-        
+        std::vector<double> fit (std::vector<double> x_data, std::vector<double>, int order)
+        {
+           
+        }        
 };
 
 //============================================================================
