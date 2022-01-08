@@ -2,9 +2,9 @@ comp=g++
 
 comp_flags=-O3 -Wall -shared -std=c++17 -fPIC
 
-include_dirs=-I ../extern/pybind11/include/pybind11/ \
-	     -I /home/anvar/anaconda3/include/python3.9/ \
-	     -I ./
+include_dirs=-I/usr/include/pybind11/ \
+		-I/usr/include/python3.8/ \
+	       -I./
 
 defaults:
-	${comp} ${comp_flags} $$(python3 -m pybind --include) fit.cpp -o fit$$(python3-config --extension-suffix) ${include_dirs}
+	${comp} ${comp_flags} $$(python3 -m pybind --includes) polynomial.cpp fit.cpp -o fit$$(python3-config --extension-suffix) ${include_dirs}
