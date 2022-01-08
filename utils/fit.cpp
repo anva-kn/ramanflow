@@ -1,12 +1,9 @@
 #include "fit.hpp"
-//#include "polynomial.hpp"
 #include <string>
 #include "poly1d.cpp"
-// #include "../extern/pybind11/include/pybind11/pybind11.h"
 #include <math.h>
 #include <algorithm>
 #include <iterator>
-// #include <Python.h>
 #include <pybind11.h>
 #include <stl.h>
 #include <operators.h>
@@ -14,30 +11,47 @@
 
 namespace py = pybind11;
 
-void Fit :: PolyBiquadratic(std::vector<double> x_data, std::vector<double> beta)
+std::vector<double> Fit :: PolyBiquadratic(std::vector<double> x_data, std::vector<double> beta)
 {
     Poly1d poly;
     poly.init(beta);
-    int power = beta.size() - 1;
-   // std::cout << "Polynomial: " << std::endl;
-   // for (auto term : poly.getCoeffs())
-   // {
-   //     std::cout << term << "x^" << power  << " + ";
-   //     power--;
-   // }
     std::vector<double> fit_result(x_data.size(), 0.0);
     fit_result = poly.evaluate(x_data);
-    for (auto res : fit_result)
-    {
-        std::cout << res << " "; 
-    }
-    std::cout << std::endl;
+    return fit_result;
 }
-//std::vector<double> Fit :: InitPolyBiquadratic(std::vector<double> x_data, std::vector<double> y_data)
-//{
-//  beta_init = np.polyfit(x_data, y_data, 4)
-//  return beta_init
-//}
+
+std::vector<double> Fit :: InitPolyBiquadratic(std::vector<double> x_data, std::vector<double> y_data, int order)
+{
+    std::vector<double> beta_init;
+    std::vector<double> coefficients;
+    double coeff_0 = 0.0;
+    Poly1d poly;
+    std::cout << "Starting fitting... " << std::endl;
+    poly.fit(x_data, y_data, coefficients, order);
+    std::cout << "Finished fitting. " << std::endl;
+    std::cout << "Calculating beta_init... " << std::endl;
+    for(auto check : coefficients)
+    {
+        std::cout << check << " ";
+    }
+    for (int i = 0; i < x_data.size(); i++)
+    {
+        std::cout << "Problem at coeff[0]? " << std::endl;
+        double fit_val = coefficients[0];
+        std::cout << "Nope..." << std::endl; 
+        for (int j = 1; j < coefficients.size(); j++)
+        {
+            std::cout << "How about coeff[j]? " << std::endl;
+            std::cout << coefficients[j] << " ";
+           fit_val += coefficients[j] * std::pow(x_data.at(i), j);
+        }
+        //fit_val += coeff_0;
+        beta_init.push_back(fit_val);
+    }
+    std::cout << "Finished calculating beta_init." << std::endl;
+    //beta_init = np.polyfit(x_data, y_data, 4)
+    return beta_init;
+}
 
 std::vector<double> Fit :: PseudoVoight(std::vector<double> x_data, std::vector<double> beta)
 {
@@ -119,9 +133,8 @@ std::vector<double> Fit :: LorentzAmplitude(std::vector<double> x_data, std::vec
 PYBIND11_MODULE(fit, myFit) {
     py::class_<Fit>(myFit, "Fit")
     .def(py::init<>())
-//  .def("get_beta_params_cpp", &Fit::GetBetaParams)
     .def("poly4_cpp", &Fit::PolyBiquadratic)
-    //.def("init_poly_cpp", &Fit::InitPolyBiquadratic)
+    .def("init_poly_cpp", &Fit::InitPolyBiquadratic)
     .def("pseudo_voight_cpp", &Fit::PseudoVoight)
     .def("init_pseudo_voight_cpp", &Fit::InitPseudoVoight)
     //.def("gauss_amp_cpp" &Fit::GaussianAmplitude)

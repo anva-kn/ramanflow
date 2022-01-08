@@ -1,12 +1,14 @@
 #include <iostream>
 #include <vector>
-#include <cstdint>
+//#include <cstdint>
 #include <cmath>
+#include <Eigen/Dense>
+#include <Eigen/QR>
 
 class Poly1d
 {
-    private:
-         std::vector<double> coefficients_{};
+    protected:
+         std::vector<double> coefficients_;
     public:
         //============================================================================
         // Method Description:
@@ -47,42 +49,32 @@ class Poly1d
             return result;
         }
             
-        std::vector<double> fit (std::vector<double> x_data, std::vector<double>, int order)
+        void fit (std::vector<double> x_data, std::vector<double> y_data, std::vector<double> &coeff, int order)
         {
-           
+            Eigen::MatrixXd W(x_data.size(), order + 1); 
+            Eigen::MatrixXd I = Eigen::VectorXd::Map(&y_data.front(), y_data.size());
+            Eigen::VectorXd result;
+
+            assert(x_data.size() == y_data.size());
+            assert(x_data.size() >= order + 1);
+
+            for(std::size_t i = 0; i < x_data.size(); i++)
+            {
+                for (std::size_t j = 0; j < order + 1; j++)
+                {
+                    W(i, j) = std::pow(x_data.at(i), j);
+                }
+            }
+
+//            std::cout<< W << std::endl;
+
+            result = W.householderQr().solve(I);
+            coeff.resize(order + 1);
+
+            for(std::size_t k = 0; k < order + 1; k++)
+            {
+                coeff[k] = result[k];
+            }
         }        
 };
-
-//============================================================================
-// Method Description:
-//std::vector<double> Poly1d :: fit(const std::vector<double>& xValues, const std::vector<double>& yValues, uint8_t polyOrder)
-//{
-//  int numMeasurements = xValues.size();
-//
-//  NdArray<double> a(numMeasusrements, polyOrder + 1);
-//  for (uint32 measIdx = 0; measIdx < numMeasurements; ++measIdx)
-//  {
-//      const auto xDouble = static_cast<double>(xValues[measIdx]);
-//      for (uint8 order = 0; order < a.numCols(); ++order)
-//      {
-//          a(measIdx, order) = utils::power(xDouble, order);
-//      }
-//  }
-//
-//  NdArray<double> aInv;
-//  if (a.issquare())
-//  {
-//      aInv = linalg::inv(a);
-//  }
-//  else
-//  {
-//      // psuedo-inverse
-//      auto aT = a.transpose();
-//      auto aTaInv = linalg::inv(aT.dot(a));
-//      aInv = aTaInv.dot(aT);
-//  }
-//  
-//  auto x = aInv.dot(yValues.template astype<double>());
-//  return Poly1d<double>(x);
-//}
 

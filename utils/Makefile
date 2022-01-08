@@ -4,6 +4,7 @@ comp_flags=-O3 -Wall -shared -std=c++17 -fPIC
 
 include_dirs=-I/usr/include/pybind11/ \
 		-I/usr/include/python3.8/ \
+		-I/usr/include/eigen3 \
 	       -I./
 
 defaults:
