@@ -32,7 +32,7 @@ class Fit
 
         void PrintMap(std::map<std::string, int>& m);
 
-        std::vector<double> PolyBiquadratic(std::vector<double> x_data, double beta[]);
+        void PolyBiquadratic(std::vector<double> x_data, double *beta, int order, std::vector<double> eval_pts);
         std::vector<double> InitPolyBiquadratic(std::vector<double> x_data, std::vector<double> y_data);
         std::vector<double> PseudoVoight(std::vector<double> x_data, std::vector<double> beta);
         std::vector<double> InitPseudoVoight(std::vector<double> &x_data, std::vector<double> &y_data);
