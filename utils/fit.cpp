@@ -1,6 +1,6 @@
 #include "fit.hpp"
-#include <string>
 #include "poly1d.cpp"
+#include <string>
 #include <math.h>
 #include <algorithm>
 #include <iterator>
@@ -24,7 +24,6 @@ std::vector<double> Fit :: InitPolyBiquadratic(std::vector<double> x_data, std::
 {
     std::vector<double> beta_init;
     std::vector<double> coefficients;
-    double coeff_0 = 0.0;
     Poly1d poly;
     std::cout << "Starting fitting... " << std::endl;
     poly.fit(x_data, y_data, coefficients, order);

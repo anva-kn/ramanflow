@@ -49,18 +49,18 @@ class Poly1d
             return result;
         }
             
-        void fit (std::vector<double> x_data, std::vector<double> y_data, std::vector<double> &coeff, int order)
+        void fit (std::vector<double> &x_data, std::vector<double> &y_data, std::vector<double> &coeff, int order)
         {
             Eigen::MatrixXd W(x_data.size(), order + 1); 
-            Eigen::MatrixXd I = Eigen::VectorXd::Map(&y_data.front(), y_data.size());
+            Eigen::VectorXd I = Eigen::VectorXd::Map(&y_data.front(), y_data.size());
             Eigen::VectorXd result;
 
             assert(x_data.size() == y_data.size());
             assert(x_data.size() >= order + 1);
 
-            for(std::size_t i = 0; i < x_data.size(); i++)
+            for(std::size_t i = 0; i < x_data.size(); ++i)
             {
-                for (std::size_t j = 0; j < order + 1; j++)
+                for (std::size_t j = 0; j < order + 1; ++j)
                 {
                     W(i, j) = std::pow(x_data.at(i), j);
                 }
@@ -75,6 +75,6 @@ class Poly1d
             {
                 coeff[k] = result[k];
             }
-        }        
+        }
 };
 

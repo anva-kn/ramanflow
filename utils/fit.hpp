@@ -10,12 +10,6 @@
 
 class Fit
 {
-    private:
-        std::map<std::string, int> beta_params_ = {{"poly4", 4},
-                                            {"pseudo_voight", 4},
-                                            {"gauss_amp", 3},
-                                            {"gen_lor_amp", 4},
-                                            {"lor_amp", 3}};
     public:
         // Basic constructors.
         Fit() = default; // default constructor.
@@ -24,11 +18,6 @@ class Fit
         Fit & operator=(Fit const & ); // copy assignment operator.
         Fit & operator=(Fit       &&); // move assignment operator.
         ~Fit() = default; // default destruct
-
-        std::map<std::string, int> GetBetaParams(void) const
-        {
-            return beta_params_;
-        }
 
         std::vector<double> PolyBiquadratic(std::vector<double> x_data, std::vector<double> beta);
         std::vector<double> InitPolyBiquadratic(std::vector<double> x_data, std::vector<double> y_data, int order);
