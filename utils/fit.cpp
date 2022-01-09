@@ -141,19 +141,3 @@ PYBIND11_MODULE(fit, myFit) {
     .def("lor_amp_cpp", &Fit::LorentzAmplitude);
 
 }
-
-
-
-//int main(void)
-//{
-//  Fit *myfit = new Fit();
-//  std::map<std::string, int> betaParameters = myfit->GetBetaParams();
-//  std::cout << "__beta_params map : ";
-//  myfit->PrintMap(betaParameters);
-//  std::cout <<std::endl;
-//  std::cout << betaParameters.size() << std::endl;
-//  // std::string key = std::string("poly4");
-//  std::cout << betaParameters[std::string("poly4")] << std::endl;
-//
-//  return EXIT_SUCCESS;
-//}
