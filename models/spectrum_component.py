@@ -31,6 +31,7 @@ class SpectrumComponent:
         # note that you don't need to initialize all times you want to do fitting to new data
 
         # TODO: # add in verbose option
+        #import ipdb; ipdb.set_trace()
         if range_of_indices is not None:
             peak_pos = list(range(range_of_indices[0], range_of_indices[1], 1))
             self.__beta_init = self.init_fit_fun(x_data[peak_pos], y_data[peak_pos])

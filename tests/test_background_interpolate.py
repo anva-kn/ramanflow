@@ -2,9 +2,9 @@
 
 
 import sys
-sys.path.insert(0, '/home/dtos/Coding/ramanflow/utils')
-sys.path.insert(0, '/home/dtos/Coding/ramanflow/models')
-sys.path.insert(0, '/home/dtos/Coding/ramanflow/test_data')
+sys.path.insert(0, '../utils')
+sys.path.insert(0, '../models')
+sys.path.insert(0, '../test_data')
 from loss_functions import Loss
 from fit_functions import Fit
 from background import Background
@@ -23,7 +23,7 @@ import math
 
 #xls = pd.ExcelFile("/home/dtos/Coding/SLA/ICASSP/xlsx/clean_spectrum.xlsx")
 # xls = pd.ExcelFile("clean_spectrum.xlsx")
-test_data = np.load('/home/dtos/Coding/ramanflow/test_data/batch1.npy')
+test_data = np.load('../test_data/batch1.npy')
 #f_sup = np.array(pd.read_excel(xls, 'f_sup')).squeeze()
 f_sup = np.arange(0, 2400, 2)
 #dict_data = xls.sheet_names

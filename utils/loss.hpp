@@ -18,11 +18,11 @@ class Loss
         Loss & operator=(Loss       &&); // move assignment operator.
         ~Loss() = default; // default destruct
 
-        double PositiveMse(std::vector<double> y_pred, std::vector<double> y_true);
-        double PositiveMseLoss(std::vector<double> y_pred, std::vector<double> y_true);
-        double L2ReluLoss(std::vector<double> y_pred, std::vector<double> y_true, double nu);
-        double PeakMseLoss(std::vector<double> y_pred, std::vector<double> y_true);
-        double MseLoss(std::vector<double> y_pred, std::vector<double> y_true);
+        double PositiveMse(std::vector<double> &y_pred, std::vector<double> &y_true);
+        double PositiveMseLoss(std::vector<double> &beta, std::vector<double> &x_data, std::vector<double> &y_data);
+        double L2ReluLoss(std::vector<double> &y_pred, std::vector<double> &y_true, double nu);
+        double PeakMseLoss(std::vector<double> &y_pred, std::vector<double> &y_true);
+        double MseLoss(std::vector<double> &y_pred, std::vector<double> &y_true);
 };
 
 #endif // LOSS_HPP_INCLUDED
