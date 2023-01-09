@@ -1,65 +1,33 @@
-##
 # Makefile for Ramanflow project
 #
-# @version 0.1
+# @version 0.2.0
 # For the next time add compilation of models.
-
 
 CXX = g++
 SHELL = /bin/sh
 CFLAGS = --std=c++17
-WFLAGS = -O3 -Wall -shared
-LIB = -I./extern/pybind11/include \
-      -I/opt/intel/oneapi/mkl/latest/include \
+WFLAGS = -O3 -Wall -shared -fPIC
 
-# Building the models module
+# Include directories
+LIB = -I/extern/pybind11/include \
+      -I/usr/bin/env python3
+# include pybind11/pybind11.h
+# Directory containing the models source files
+MODELS_DIR = models
+UTILS_DIR = utils
+TESTS_DIR = tests
+PYBIND_DIR = extern/pybind11
 
-models:
+.PHONY: compile_models clean
 
-#background: background.o
-#	$(CXX) $^ -o $@
-#
-#background.o: backgound.hpp background.cpp
-#	$(CXX) -c $^ -o $@
-#
-#peak:
-#
-#
-#peak_cluster:
-#
-#
-#spectrum_component:
+compile_models:
+	$(CXX) $(CFLAGS) $(WFLAGS) $(LIB) -c $(MODELS_DIR)/SpectrumComponentBbindings.cpp -o $(MODELS_DIR)/spectrum_component_bindings.o
+	$(CXX) $(CFLAGS) $(WFLAGS) $(LIB) -c $(MODELS_DIR)/SpectrumComponent.cpp $(MODELS_DIR)/SpectrumComponent.hpp -o SpectrumComponent.o
 
-# Building the utils module
+# Compile the Python extension module
+#spectrum_component.so: $(MODELS_DIR)/spectrum_component.o $(MODELS_DIR)/spectrum_component_bindings.o
+#	$(CXX) $(WFLAGS) $(LIB) -o $@ $^
 
-utils:
-
-#fit: 
-#
-#
-#importance:
-#
-#
-#loss:
-
-# Run tests
-
-test:
-
-
-# Cleaning up 
+# Clean up
 clean:
-	rm -rf
-
-#comp=g++
-#
-#comp_flags=-O3 -Wall -shared -std=c++17 -fPIC
-#
-#include_dirs=-I/usr/include/pybind11/ \
-#		-I/usr/include/python3.10/ \
-#		-Iusr/include/eigen3/ \
-#	       -I./
-#
-#defaults:
-#	${comp} ${comp_flags} $$(python3 -m pybind --includes) poly1d.cpp fit.cpp -o fit$$(python3-config --extension-suffix) ${include_dirs}
-#	# ${comp} ${comp_flags} poly1d.cpp loss.cpp -o loss
+	rm -f $(MODELS_DIR)/*.o $(MODELS_DIR)/*.so

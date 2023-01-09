@@ -23,7 +23,6 @@ class Background(SpectrumComponent):
         -------
         yhat_inter
         """
-        
         result = minimize(self.loss_fit_beta, self.get_beta_init(), args=(x_data[idx], y_data[idx]),
                           method='Nelder-Mead', tol=1e-12)
 

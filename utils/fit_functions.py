@@ -96,5 +96,3 @@ class Fit:
         sgs = beta[2]
         d = 2
         return [M / (1 + (abs((x_data[i] - c) / sgs)) ** d) for i in range(x_data.size)]
-
-from raman
