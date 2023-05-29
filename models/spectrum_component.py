@@ -4,6 +4,7 @@ from typing import Any, Callable
 from fit_functions import Fit
 
 
+
 @dataclass
 class SpectrumComponent:
     """
