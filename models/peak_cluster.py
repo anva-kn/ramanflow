@@ -1,3 +1,4 @@
+# Import necessary libraries
 from scipy.optimize import minimize
 from dataclasses import dataclass, field
 from peak import Peak
@@ -5,6 +6,7 @@ import numpy as np
 import scipy.signal as sci
 
 
+# Define a new class PeakCluster that inherits from the Peak class
 @dataclass
 class PeakCluster(Peak):
     """This is a class to fit N peaks into  a subset of data
@@ -13,25 +15,34 @@ class PeakCluster(Peak):
         for init function: x_data, y_data, size(num of peaks)
         for fit function: x_data, y_data
     """
+    # Define private instance variables
     __size: int = 0
     __beta_init: np.ndarray = field(init=False)
 
     def init(self, x_data, y_data):
+        """Initialize the PeakCluster object with x and y data.
+        """
+        # Calculate the number of peaks and the step size
         # self.__size = size
         num_of_peaks = self.__size
         step = int(y_data.shape[-1] / num_of_peaks)
+
+        # Initialize the beta array
         self.__beta_init = np.zeros(num_of_peaks * self.get_beta_size())
-        
+
+        # Find the peaks and their properties
         peaks, properties = sci.find_peaks(y_data, prominence=0.01) #should prominence be a parameter of init?
         prominences = properties['prominences']    
         peak_width = properties['right_bases'] - properties['left_bases']
         l_ips = properties['left_bases'].astype(int)
         r_ips = properties['right_bases'].astype(int)
         
+        # Check if there is enough data to fit the given number of overall parameters
         if len(y_data) < self.get_beta_size() * num_of_peaks:
             # in this case, we can not do the fitting properly
             raise Exception("Not enough data to fit the given number of overall parameters")
 
+        # Initialize each peak in the cluster
         for i in range(num_of_peaks):
             temp_component = Peak(self.fit_fun, self.init_fit_fun, self.loss_fun)
             # temp_component.init(x_data[i * step:(i + 1) * step], y_data[i * step:(i + 1) * step])
@@ -40,7 +51,8 @@ class PeakCluster(Peak):
 
     def fit(self, x_data, y_data):
         """
-
+        Fit the PeakCluster object to x and y data.
+        
         Parameters
         ----------
         x_data

@@ -6,7 +6,7 @@ sys.path.insert(0, '../utils')
 sys.path.insert(0, '../models')
 sys.path.insert(0, '../test_data')
 from loss_functions import Loss
-from fit_functions import Fit
+#from fit_functions import Fit
 from background import Background
 
 import scipy.interpolate as si
@@ -20,7 +20,10 @@ matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 from math import pi
 import math
+from fit import Fit
 
+
+maFit = Fit()
 #xls = pd.ExcelFile("/home/dtos/Coding/SLA/ICASSP/xlsx/clean_spectrum.xlsx")
 # xls = pd.ExcelFile("clean_spectrum.xlsx")
 test_data = np.load('../test_data/batch1.npy')
@@ -43,13 +46,13 @@ x_data = f_sup
 nu = 0.01
 slide_win = 10
 loss = Loss()
-fit = Fit()
+#fit = Fit()
 
 # res = 1024
 # interpol_pos = [0, 100, 250, 500, 750, res-1]
 # loss = Loss()
 
-background_model = Background(fit.poly4, fit.init_poly4, lambda y_pred, y_true: loss.l2_relu_loss(y_pred, y_true, 0.0001))
+background_model = Background(maFit.poly4_cpp, maFit.init_poly_cpp, lambda y_pred, y_true: loss.l2_relu_loss(y_pred, y_true, 0.0001))
 
 
 res = x_data.shape[-1]

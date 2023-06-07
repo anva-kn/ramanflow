@@ -74,13 +74,13 @@ std::vector<double> Fit :: PseudoVoight(std::vector<double> x_data, std::vector<
 
 std::vector<double> Fit :: InitPseudoVoight(std::vector<double> &x_data, std::vector<double> &y_data)
 {
-    std::vector<double> beta_init_lor = {};
+    std::vector<double> beta_init_lor;
     std::vector<double>::iterator max_element = std::max_element(y_data.begin(), y_data.end());
     int argmaxVal = std::distance(y_data.begin(), max_element);
-    beta_init_lor[0] = *std::max_element(y_data.begin(), y_data.end());
-    beta_init_lor[1] = x_data[argmaxVal];
-    beta_init_lor[2] = (x_data.end() - x_data.begin()) / 16.0;
-    beta_init_lor[3] = 0.0;
+    beta_init_lor.push_back(*std::max_element(y_data.begin(), y_data.end()));
+    beta_init_lor.push_back(x_data[argmaxVal]);
+    beta_init_lor.push_back((x_data.end() - x_data.begin()) / 16.0);
+    beta_init_lor.push_back(0.0);
     return beta_init_lor;
 }
 
@@ -141,19 +141,3 @@ PYBIND11_MODULE(fit, myFit) {
     .def("lor_amp_cpp", &Fit::LorentzAmplitude);
 
 }
-
-
-
-//int main(void)
-//{
-//  Fit *myfit = new Fit();
-//  std::map<std::string, int> betaParameters = myfit->GetBetaParams();
-//  std::cout << "__beta_params map : ";
-//  myfit->PrintMap(betaParameters);
-//  std::cout <<std::endl;
-//  std::cout << betaParameters.size() << std::endl;
-//  // std::string key = std::string("poly4");
-//  std::cout << betaParameters[std::string("poly4")] << std::endl;
-//
-//  return EXIT_SUCCESS;
-//}
