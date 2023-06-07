@@ -4,8 +4,7 @@ import numpy as np
 from scipy.optimize import minimize
 import scipy.interpolate as si
 import matplotlib.pyplot as plt
-from tools.ramanflow.loss_functions import pos_mse_loss, positive_mse, poly4, reg_pos_mse_loss, reg_positive_mse, \
-	reg_pos_loss, mse_loss
+from loss_functions import Loss
 from scipy import interpolate as si
 from itertools import takewhile
 
