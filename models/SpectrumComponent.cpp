@@ -1,4 +1,4 @@
-#include "spectrum_component.hpp"
+#include "SpectrumComponent.hpp"
 #include <cmath>
 
 double SpectrumComponent::loss_fun(std::vector<double> y, std::vector<double> yhat) {
