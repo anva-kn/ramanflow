@@ -13,13 +13,10 @@ xls = pd.ExcelFile("/Users/anvarkunanbaev/PycharmProjects/SLA/ICASSP/xlsx/clean_
 
 f_sup = np.array(pd.read_excel(xls, 'f_sup')).squeeze()
 dict_data = xls.sheet_names
-data = {}
-for i in dict_data:
-    data[i] = np.array(pd.read_excel(xls, i))
-data_m = {}
-
-for i in dict_data:
-    data_m[i] = np.mean(np.array(pd.read_excel(xls, i)), axis=0)
+data = {i: np.array(pd.read_excel(xls, i)) for i in dict_data}
+data_m = {
+    i: np.mean(np.array(pd.read_excel(xls, i)), axis=0) for i in dict_data
+}
 g = data_m["gly"] - data_m["water"]
 
 y_data = g
@@ -130,7 +127,7 @@ def find_peak_supp(int_idx, y_data, peak_importance_fun, discount=0.5):
     expand_left = True
     expand_right = True
 
-    while expand_left == True and expand_right == True:
+    while expand_left and expand_right:
 
         # check boundaries
 
@@ -140,7 +137,7 @@ def find_peak_supp(int_idx, y_data, peak_importance_fun, discount=0.5):
         if r_pos_temp == res - 1:
             expand_right = False
 
-        if expand_left == True:
+        if expand_left:
             impo_left = peak_importance_fun(y_data[range(l_pos_temp - 1, r_pos_temp)])
 
             if impo_left < discount * max_impo:
@@ -148,7 +145,7 @@ def find_peak_supp(int_idx, y_data, peak_importance_fun, discount=0.5):
             else:
                 l_pos_temp = l_pos_temp - 1
 
-        if expand_right == True:
+        if expand_right:
             impo_right = peak_importance_fun(y_data[range(l_pos_temp, r_pos_temp + 1)])
 
             if impo_right < discount * max_impo:

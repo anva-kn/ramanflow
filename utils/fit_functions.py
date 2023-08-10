@@ -19,8 +19,7 @@ class Fit:
 
     @staticmethod
     def init_poly4(x_data, y_data):
-        beta_int = np.polyfit(x_data, y_data, 4)
-        return beta_int
+        return np.polyfit(x_data, y_data, 4)
 
     @staticmethod
     def pseudo_voig(x_data, beta):
