@@ -29,74 +29,74 @@ def find_peak_supp(int_idx, y_data, peak_importance_fun, discount=0.85):
     # discount=0.85
     #  -> how generous we are in getting the peaks to continue
     #  
-    
+
     # SR: debug
 
     # int_idx=idx_lr_tmp
-    
+
     # define the steppeness an the mse of the diff of the 
-    
+
     # expand left and right until the steepness in         
-    
+
     # TODO
     # checknig for teh boundaries "should" be unnecessary 
-    
+
     res=len(y_data)
-    
+
     #TODO 
     # better casting?
-    
+
     # int_idx[0] = int(int_idx[0])
     # int_idx[1] = int(int_idx[1])
-    
+
     l_pos_temp=int(np.max([int_idx[0],0]))
     r_pos_temp=int(np.min([int_idx[1],res-1]))
-    
+
     # extend the peak until the decrease from the max importance you have seen in the window is discont*max
     # 
     max_impo = peak_importance_fun(y_data[range(int(int_idx[0]),int(int_idx[1]))])
-    
+
     # expand the interval until is decreasing by a factor discount, discount account for the randomness in the error
     # the discount starts from the median of the vector
-    
+
     expand_left = True
     expand_right = True
-    
-    while expand_left == True and expand_right == True:
+
+    while expand_left and expand_right:
         
         # check boundariens
 
         if l_pos_temp==0:
            expand_left=False
-           
+
         if r_pos_temp==res-1:
             expand_right = False
-            
-        
-        if expand_left == True:            
+
+
+        if expand_left:            
             impo_left = peak_importance_fun(y_data[range(l_pos_temp-1,r_pos_temp)])
-                                            
+
             if impo_left < discount*max_impo:
                expand_left=False     
             else :
                l_pos_temp=l_pos_temp-1
-               
-        if expand_right == True:
+
+        if expand_right:
             impo_rigth=peak_importance_fun(y_data[range(l_pos_temp,r_pos_temp+1)])
-            
+
             if impo_rigth< discount*max_impo : 
                expand_left=False     
             else :
                r_pos_temp=r_pos_temp+1
-            
-        
+
+
         # update max importance
         # TODO we can do this better?
         tmp_impo = peak_importance_fun(y_data[range(l_pos_temp,r_pos_temp)])
-        
+
         if tmp_impo > max_impo:
             max_impo=tmp_impo 
-        
+
     return [l_pos_temp,r_pos_temp] ,tmp_impo 
     
 
@@ -347,7 +347,7 @@ y_rec_2 = np.array([0.01347457, 0.01619101, 0.06831077, 0.01818323, 0.00989696,
 peaks, properties = sci.find_peaks(y_rec,prominence=0.01) 
 
 # build the edges
-peak_lr = np.zeros((len(peaks),2)) 
+peak_lr = np.zeros((len(peaks),2))
 peak_lr[:,0]=properties["left_bases"].astype(int)
 peak_lr[:,1]=properties["right_bases"].astype(int)
 
@@ -356,21 +356,18 @@ from importance_functions import Importance
 peak_importance_fun=Importance.house_fit
 
 
-i=0
 lr_vec = np.zeros((len(peaks),2))
 impo_v = np.zeros(len(peaks))
 
-for peak in peaks :
+for i, peak in enumerate(peaks):
     print("processing peak ", peak)    
 
     lr_vec[i,:], impo_v [i]  = find_peak_supp(peak_lr[i],y_rec,peak_importance_fun)
-    
-    i+=1
-    
+
 plt.plot(x_rec,y_rec)
 plt.plot(x_rec[peak],y_rec[peak],'*')
 
-for i in range(len(peaks)):
+for _ in range(len(peaks)):
     plt.plot()
 
 
