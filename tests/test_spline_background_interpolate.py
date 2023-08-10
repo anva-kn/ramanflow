@@ -447,19 +447,21 @@ def spline_remove_est_fluorescence(x_data, y_data, background_model, peak_model,
 
         # gosh my indexing is awful
         # pick on position for every window where you "pin" the interpolation
-        for k in range(len(tmp_interpol_pos)):
+        for tmp_interpol_po in tmp_interpol_pos:
 
-            tmp_pos = np.concatenate((interpol_pos, [tmp_interpol_pos[k]]))
+            tmp_pos = np.concatenate((interpol_pos, [tmp_interpol_po]))
 
             y_hat_tmp = background_model.interpolate(x, y, tmp_pos)
 
             # weighted jumps:
             # including log seems to be a bit better
-            tmp_err = background_model.get_loss_inter() / np.log((tmp_interpol_pos[k] - min_pos) + 0.5)
+            tmp_err = background_model.get_loss_inter() / np.log(
+                tmp_interpol_po - min_pos + 0.5
+            )
 
             # update the minimum
             if tmp_err < min_err:
-                min_pos = tmp_interpol_pos[k]
+                min_pos = tmp_interpol_po
                 min_err = tmp_err
 
         interpol_pos.append(min_pos)
@@ -470,7 +472,7 @@ def spline_remove_est_fluorescence(x_data, y_data, background_model, peak_model,
         interpol_pos = list(np.array(interpol_pos)[sort_pos.astype(int)])
         interpol_err = list(np.array(interpol_err)[sort_pos.astype(int)])
 
-        # 
+            # 
 
     # finally fitting
     y_hat = background_model.interpolate(x, y, interpol_pos)
@@ -492,13 +494,10 @@ xls = pd.ExcelFile("/Users/anvarkunanbaev/PycharmProjects/SLA/ICASSP/xlsx/clean_
 
 f_sup = np.array(pd.read_excel(xls, 'f_sup')).squeeze()
 dict_data = ["dark", "laser", "quartz", "water", "gly", "leu", "phe", "trp"]
-data = {}
-for i in dict_data:
-    data[i] = np.array(pd.read_excel(xls, i))
-data_m = {}
-
-for i in dict_data:
-    data_m[i] = np.mean(np.array(pd.read_excel(xls, i)), axis=0)
+data = {i: np.array(pd.read_excel(xls, i)) for i in dict_data}
+data_m = {
+    i: np.mean(np.array(pd.read_excel(xls, i)), axis=0) for i in dict_data
+}
 g = data_m["gly"] - data_m["water"]
 
 y_data = g

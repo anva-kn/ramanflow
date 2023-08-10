@@ -83,19 +83,21 @@ while (min_pos + 1) - res < -1:
 
     # gosh my indexing is awful
     # pick on position for every window where you "pin" the interpolation
-    for k in range(len(tmp_interpol_pos)):
+    for tmp_interpol_po in tmp_interpol_pos:
 
-        tmp_pos = np.concatenate((interpol_pos, [tmp_interpol_pos[k]]))
+        tmp_pos = np.concatenate((interpol_pos, [tmp_interpol_po]))
 
         y_hat_tmp = background_model.interpolate(x, y, tmp_pos)
 
         # weighted jumps:
         # including log seems to be a bit better
-        tmp_err = background_model.get_loss_inter() / np.log((tmp_interpol_pos[k] - min_pos) + 0.5)
+        tmp_err = background_model.get_loss_inter() / np.log(
+            tmp_interpol_po - min_pos + 0.5
+        )
 
         # update the minimum
         if tmp_err < min_err:
-            min_pos = tmp_interpol_pos[k]
+            min_pos = tmp_interpol_po
             min_err = tmp_err
 
     background_model.init(x[tmp_pos], y[tmp_pos])
@@ -107,8 +109,6 @@ sort_pos = np.argsort(interpol_pos)
 interpol_pos = list(np.array(interpol_pos)[sort_pos.astype(int)])
 interpol_err = list(np.array(interpol_err)[sort_pos.astype(int)])
 
-    #
-
 # finally fitting
 y_hat = background_model.interpolate(x, y, interpol_pos)
 
@@ -116,7 +116,6 @@ y_hat = background_model.interpolate(x, y, interpol_pos)
 # y_bsp = si.interp1d(x_data[interpol_pos], y_data[interpol_pos], kind='cubic')(x_data)
 y_bsp = si.interp1d(x[interpol_pos], y[interpol_pos], kind='linear')(x)
 
-    # TODO: put in verbose mod
 plt.figure("fitting positions + spline interpolation", figsize=(12, 10), dpi=80)
 plt.title("fitting positions + spline interpolation")
 plt.plot(x, y)

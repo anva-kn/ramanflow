@@ -18,7 +18,7 @@ f_sup = np.arange(0, 1000, 1)
 data = synthetic_sig.data[0]
 
 asymmetry = im.asymmetry(f_sup[150:300], data[150:300])
-print('b/a is: {}'.format(asymmetry))
+print(f'b/a is: {asymmetry}')
 
 
 window = signal.gaussian(51, std=7)
