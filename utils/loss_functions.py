@@ -15,8 +15,13 @@ class Loss:
 
     def positive_mse_loss(self, beta, x_data, y_data):
         p = np.poly1d(beta)
-        error = sum([self.positive_mse(p(x_data[i]), y_data[i]) for i in range(x_data.size)]) / y_data.size
-        return error
+        return (
+            sum(
+                self.positive_mse(p(x_data[i]), y_data[i])
+                for i in range(x_data.size)
+            )
+            / y_data.size
+        )
 
     @staticmethod
     def l2_relu_loss(y_pred, y_true, nu):

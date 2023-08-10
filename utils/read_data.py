@@ -94,5 +94,4 @@ class ReadData:
     @staticmethod
     def read_npz_file(filename):
         data_npz_dict = np.load(filename, allow_pickle=True)
-        data_npz = data_npz_dict['arr_0']
-        return data_npz
+        return data_npz_dict['arr_0']
