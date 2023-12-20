@@ -12,29 +12,23 @@ class Importance:
 
     @staticmethod
     def area(y_data):
-        score = np.sum(y_data)
-        return score
+        return np.sum(y_data)
 
     @staticmethod
     def high(y_data):
-        score = np.max(y_data)
-        return score
+        return np.max(y_data)
 
     @staticmethod
     def mean_level(y_data):
-        score = np.sum(y_data) / y_data.size
-        return score
+        return np.sum(y_data) / y_data.size
 
     @staticmethod
     def box(y_data):
-        # this is a box approximation of the pean
-        score = np.max(y_data) * y_data.size
-        return score
+        return np.max(y_data) * y_data.size
 
     @staticmethod
     def sharpness(y_data):
-        score = np.sum(np.diff(y_data) ** 2) / y_data.size
-        return score
+        return np.sum(np.diff(y_data) ** 2) / y_data.size
 
     @staticmethod
     def fwhm(y_data):
@@ -42,8 +36,7 @@ class Importance:
         # TODO: double check this function
         peak = np.argmax(y_data)
         results = peak_widths(y_data, np.array([peak]), rel_height=0.5, prominence_data=None, wlen=None)
-        score = results[0]
-        return score
+        return results[0]
 
     @staticmethod
     def trapezoid(self):
@@ -74,8 +67,7 @@ class Importance:
         left_edge, right_edge = round(results_tenth[2][0]), round(results_tenth[3][0])
         a = x_data[peak] - x_data[left_edge]
         b = np.abs(x_data[peak] - x_data[right_edge])
-        score = b / a
-        return score
+        return b / a
 
     @staticmethod
     def gaussian_peak_area(y_data):
@@ -83,8 +75,6 @@ class Importance:
         fwhm = peak_widths(y_data, np.array([peak]), rel_height=0.5, prominence_data=None)
         peak_height = y_data[peak]
         gaussian_area = (peak_height * fwhm) / (2.35 * 0.3989)
-        # TODO: complete gaussian_peak_area
-        pass
 
     @staticmethod
     def areas_ratio(y_data):
@@ -104,8 +94,7 @@ class Importance:
         fwhm_height = results_half[1][0]
         total_area = np.sum(y_data)
         fwhm_area = fwhm_height * (right_edge - left_edge)
-        score = fwhm_area / total_area
-        return score
+        return fwhm_area / total_area
 
     @staticmethod
     def house_fit(y_data):
