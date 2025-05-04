@@ -12,14 +12,19 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
     CXX = g++
     WFLAGS = -O3 -Wall -shared
+    PYTHON_INCLUDE = -I/usr/include/python3.x
+    PYTHON_LIB = -lpython3.x
 endif
 ifeq ($(UNAME_S),Darwin)
     CXX = clang++
     WFLAGS = -O3 -Wall
+    PYTHON_INCLUDE = -I/usr/local/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/include/python3.13 -I/usr/local/lib/python3.13/site-packages/numpy/_core/include
+    PYTHON_LIB = -lpython3.13
+    PYTHON_LIB_PATH = -L/usr/local/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/lib/python3.13/config-3.13-darwin -lintl -ldl -framework CoreFoundation
 endif
 
-CFLAGS = -std=c++17
-LDFLAGS = -ltiff
+CFLAGS = -std=c++17 -I. $(PYTHON_INCLUDE)
+LDFLAGS = -ltiff $(PYTHON_LIB_PATH) $(PYTHON_LIB)
 DEBUG_FLAGS = -g -O0
 
 .PHONY: all debug clean

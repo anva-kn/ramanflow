@@ -9,7 +9,8 @@
 #include <regex>
 #include <tiffio.h>
 #include <variant>
-#include "gnuplot-iostream.h"
+#include "matplotlibcpp.h" // Add this include
+namespace plt = matplotlibcpp;
 
 bool isFileAccessible(const std::string& filename) {
     std::ifstream file(filename);
@@ -215,90 +216,69 @@ TiffImageData loadDataFromTiff(const std::string& filename) {
     return {frequencySupport, data};
 }
 
-// Add this function after your existing code
 void plotSpectralData(const TiffImageData& tiffData) {
     const auto& freqSupport = tiffData.frequencySupport;
-    
-    // Initialize gnuplot
-    Gnuplot gp;
-    
+
     if (std::holds_alternative<std::vector<std::vector<double>>>(tiffData.data)) {
-        // 2D data case - could be either a single spectrum or multiple spectra
+        // 2D data case
         const auto& data = std::get<std::vector<std::vector<double>>>(tiffData.data);
-        
-        // Set up the plot
-        gp << "set title 'Spectral Data'\n";
-        gp << "set xlabel 'Frequency (cm^{-1})'\n";
-        gp << "set ylabel 'Intensity'\n";
-        gp << "set grid\n";
-        
-        if (data.size() > 5) {
-            // If there are many spectra, only plot the first 5 for clarity
-            gp << "plot";
-            for (int i = 0; i < 5; i++) {
-                gp << (i == 0 ? " " : ", ") << "'-' with lines title 'Spectrum " << i + 1 << "'";
-            }
-            gp << "\n";
-            
-            // Send data for each spectrum
-            for (int i = 0; i < 5; i++) {
-                for (size_t j = 0; j < freqSupport.size(); j++) {
-                    gp << freqSupport[j] << " " << data[i][j] << "\n";
-                }
-                gp << "e\n"; // 'e' marks the end of a dataset
-            }
-        } else {
-            // If there are few spectra, plot all of them
-            gp << "plot";
-            for (size_t i = 0; i < data.size(); i++) {
-                gp << (i == 0 ? " " : ", ") << "'-' with lines title 'Spectrum " << i + 1 << "'";
-            }
-            gp << "\n";
-            
-            // Send data for each spectrum
-            for (size_t i = 0; i < data.size(); i++) {
-                for (size_t j = 0; j < freqSupport.size(); j++) {
-                    gp << freqSupport[j] << " " << data[i][j] << "\n";
-                }
-                gp << "e\n";
-            }
+
+        for (size_t i = 0; i < std::min<size_t>(5, data.size()); i++) {
+            plt::plot(freqSupport, data[i], {{"label", "Spectrum " + std::to_string(i + 1)}});
         }
+        plt::title("Spectral Data");
+        plt::xlabel("Frequency (cm^{-1})");
+        plt::ylabel("Intensity");
+        plt::legend();
+        plt::grid(true);
+        plt::show();
     } else {
-        // 3D data case - we'll plot the first few spectra
+        // 3D data case
         const auto& data = std::get<std::vector<std::vector<std::vector<double>>>>(tiffData.data);
-        
-        // Set up the plot
-        gp << "set title '3D Spectral Data (First 5 Spectra)'\n";
-        gp << "set xlabel 'Frequency (cm^{-1})'\n";
-        gp << "set ylabel 'Intensity'\n";
-        gp << "set grid\n";
-        
-        // Plot the first 5 spectra from different positions
-        gp << "plot";
+
         for (int i = 0; i < 5 && i < static_cast<int>(data.size()); i++) {
-            gp << (i == 0 ? " " : ", ") << "'-' with lines title 'Position " << i + 1 << "'";
-        }
-        gp << "\n";
-        
-        // Send data for each spectrum
-        for (int i = 0; i < 5 && i < static_cast<int>(data.size()); i++) {
+            std::vector<double> intensity;
             for (size_t j = 0; j < freqSupport.size(); j++) {
-                // Assuming we want to plot from the first row of each depth
-                gp << freqSupport[j] << " " << data[i][0][j] << "\n";
+                intensity.push_back(data[i][0][j]); // Plot from the first row of each depth
             }
-            gp << "e\n";
+            plt::plot(freqSupport, intensity, {{"label", "Position " + std::to_string(i + 1)}});
         }
+        plt::title("3D Spectral Data (First 5 Spectra)");
+        plt::xlabel("Frequency (cm^{-1})");
+        plt::ylabel("Intensity");
+        plt::legend();
+        plt::grid(true);
+        plt::show();
     }
 }
 
-// In your main function, add this line after loading the data:
-void plotSpectralData(const TiffImageData& tiffData); // Forward declaration
+void plotTxtData(const std::vector<DataPoint>& data) {
+    std::vector<double> x, y;
+
+    // Separate the data into x and y vectors
+    for (const auto& point : data) {
+        x.push_back(point.x);
+        y.push_back(point.y);
+    }
+
+    // Plot the data using matplotlibcpp
+    plt::plot(x, y, {{"label", "TXT Data"}});
+    plt::title("TXT Data Plot");
+    plt::xlabel("X-axis");
+    plt::ylabel("Y-axis");
+    plt::legend();
+    plt::grid(true);
+    plt::show();
+}
 
 int main() {
     try {
         // Test loading data from TXT file
         std::vector<DataPoint> txtData = loadDataFromTxt("1_min_batch1.txt");
         std::cout << "Loaded TXT data with " << txtData.size() << " data points." << std::endl;
+
+        // Plot the TXT data
+        plotTxtData(txtData);
 
         const std::string tiffFile = "1_3min_b3_50X50_spectral_mapping_1.tif";
 
@@ -307,7 +287,7 @@ int main() {
         listTiffTags(tiffFile.c_str());
 
         // Print summary info
-        printTiffInfo(tiffFile.c_str());
+        // printTiffInfo(tiffFile.c_str());
 
         // Test loading data from TIFF file
         TiffImageData tiffData = loadDataFromTiff("1_3min_b3_50X50_spectral_mapping_1.tif");
