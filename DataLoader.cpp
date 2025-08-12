@@ -9,16 +9,19 @@
 #include <regex>
 #include <tiffio.h>
 #include <variant>
-#include "matplotlibcpp.h" // Add this include
+#include "matplotlibcpp.h"
 namespace plt = matplotlibcpp;
 
-bool isFileAccessible(const std::string& filename) {
+bool isFileAccessible(const std::string &filename)
+{
     std::ifstream file(filename);
     return file.is_open();
 }
 
-std::vector<DataPoint> loadDataFromTxt(const std::string& filename) {
-    if (!isFileAccessible(filename)) {
+std::vector<DataPoint> loadDataFromTxt(const std::string &filename)
+{
+    if (!isFileAccessible(filename))
+    {
         throw std::runtime_error("Error opening file: " + filename);
     }
     std::vector<DataPoint> data;
@@ -27,18 +30,23 @@ std::vector<DataPoint> loadDataFromTxt(const std::string& filename) {
     std::string line;
     bool readData = false;
 
-    while (std::getline(file, line)) {
-        if (line.find("XYDATA") != std::string::npos) {
+    while (std::getline(file, line))
+    {
+        if (line.find("XYDATA") != std::string::npos)
+        {
             readData = true;
             continue;
         }
-        if (line.find("Extended Information") != std::string::npos) {
+        if (line.find("Extended Information") != std::string::npos)
+        {
             break;
         }
-        if (readData) {
+        if (readData)
+        {
             double x, y;
             std::istringstream iss(line);
-            if (iss >> x >> y) {
+            if (iss >> x >> y)
+            {
                 data.push_back({x, y});
             }
         }
@@ -48,215 +56,400 @@ std::vector<DataPoint> loadDataFromTxt(const std::string& filename) {
     return data;
 }
 
-// TiffImageData loadDataFromTiff(const std::string& filename) {
-//     if (!isFileAccessible(filename)) {
-//         throw std::runtime_error("Error opening file: " + filename);
-//     }
+// ########################################
+// Helper: parse <XAxis>…<End> by scanning the TIFF file as text (original approach)
+static std::vector<double> parseXAxisFromFile(const std::string &filename)
+{
+    std::ifstream file(filename, std::ios::binary);
+    if (!file)
+    {
+        throw std::runtime_error("Error opening file for metadata: " + filename);
+    }
 
-//     TIFF* tiff = TIFFOpen(filename.c_str(), "r");
-//     if (!tiff) {
-//         throw std::runtime_error("Error opening TIFF file: " + filename);
-//     }
+    std::string line, lastLineWithXAxis;
+    while (std::getline(file, line))
+    {
+        if (line.find("<XAxis>") != std::string::npos)
+        {
+            lastLineWithXAxis = line;
+        }
+    }
 
-//     uint32_t width, height, depth = 1;
-//     TIFFGetField(tiff, TIFFTAG_IMAGEWIDTH, &width);
-//     TIFFGetField(tiff, TIFFTAG_IMAGELENGTH, &height);
-//     TIFFGetField(tiff, TIFFTAG_IMAGEDEPTH, &depth);
+    if (lastLineWithXAxis.empty())
+    {
+        throw std::runtime_error("Could not find frequency support data (<XAxis>…<End>) in file");
+    }
 
-//     std::variant<std::vector<std::vector<double>>, std::vector<std::vector<std::vector<double>>>> data;
-//     if (depth == 1) {
-//         std::vector<std::vector<double>> imageData(height, std::vector<double>(width));
-//         for (uint32_t row = 0; row < height; ++row) {
-//             TIFFReadScanline(tiff, imageData[row].data(), row);
-//         }
-//         data = imageData;
-//     } else {
-//         std::vector<std::vector<std::vector<double>>> imageData(depth, std::vector<std::vector<double>>(height, std::vector<double>(width)));
-//         for (uint32_t z = 0; z < depth; ++z) {
-//             for (uint32_t row = 0; row < height; ++row) {
-//                 TIFFReadScanline(tiff, imageData[z][row].data(), row + z * height);
-//             }
-//         }
-//         data = imageData;
-//     }
+    std::smatch match;
+    std::regex regex("<XAxis>(.*?)<End>");
+    if (!std::regex_search(lastLineWithXAxis, match, regex))
+    {
+        throw std::runtime_error("Malformed <XAxis>…<End> block");
+    }
 
-//     TIFFClose(tiff);
+    std::vector<double> xs;
+    std::stringstream ss(match[1].str());
+    std::string item;
+    while (std::getline(ss, item, ','))
+    {
+        if (!item.empty())
+        {
+            xs.push_back(std::stod(item));
+        }
+    }
+    if (xs.empty())
+    {
+        throw std::runtime_error("Parsed empty frequency support from <XAxis>");
+    }
+    return xs;
+}
 
-//     std::ifstream file(filename, std::ios::binary);
-//     std::string line;
-//     std::vector<double> frequencySupport;
+// Helper: count pages (IFDs)
+static uint32_t count_pages(TIFF *tiff)
+{
+    uint32_t n = 0;
+    do
+    {
+        ++n;
+    } while (TIFFReadDirectory(tiff));
+    return n;
+}
 
-//     while (std::getline(file, line)) {
-//         std::smatch match;
-//         std::regex regex("<XAxis>(.*?)<End>");
-//         if (std::regex_search(line, match, regex)) {
-//             std::string f_sup_str = match[1].str();
-//             std::istringstream iss(f_sup_str);
-//             std::string number;
-//             while (std::getline(iss, number, ',')) {
-//                 frequencySupport.push_back(std::stod(number));
-//             }
-//             break;
-//         }
-//     }
+// Helper: convert one row to doubles according to sample format
+template <typename T>
+static inline double sample_to_double(const T &v) { return static_cast<double>(v); }
 
-//     return {frequencySupport, data};
-// }
-TiffImageData loadDataFromTiff(const std::string& filename) {
-    if (!isFileAccessible(filename)) {
+TiffImageData loadDataFromTiff(const std::string &filename)
+{
+    if (!isFileAccessible(filename))
+    {
         throw std::runtime_error("Error opening file: " + filename);
     }
 
-    // 1. First, read the frequency support data
-    std::vector<double> frequencySupport;
+    TIFF *tiff = TIFFOpen(filename.c_str(), "r");
+    if (!tiff)
     {
-        std::ifstream file(filename, std::ios::binary);
-        if (!file) {
-            throw std::runtime_error("Error opening file for metadata: " + filename);
-        }
-        
-        // Find the last line with the XAxis data
-        std::string line;
-        std::string lastLineWithXAxis;
-        
-        while (std::getline(file, line)) {
-            if (line.find("<XAxis>") != std::string::npos) {
-                lastLineWithXAxis = line;
-            }
-        }
-        
-        if (!lastLineWithXAxis.empty()) {
-            std::smatch match;
-            std::regex regex("<XAxis>(.*?)<End>");
-            if (std::regex_search(lastLineWithXAxis, match, regex)) {
-                std::string f_sup_str = match[1].str();
-                std::stringstream ss(f_sup_str);
-                std::string item;
-                while (std::getline(ss, item, ',')) {
-                    frequencySupport.push_back(std::stod(item));
-                }
-            }
-        }
-        
-        if (frequencySupport.empty()) {
-            throw std::runtime_error("Could not find frequency support data in file");
-        }
-    }
-    
-    // 2. Now open the TIFF for image data
-    TIFF* tiff = TIFFOpen(filename.c_str(), "r");
-    if (!tiff) {
         throw std::runtime_error("Error opening TIFF file: " + filename);
     }
-    
-    // Get basic TIFF dimensions
-    uint32_t width, height, samplesPerPixel;
+
+    // Read basic tags from the FIRST directory (z=0)
+    if (!TIFFSetDirectory(tiff, 0))
+    {
+        TIFFClose(tiff);
+        throw std::runtime_error("Failed to set TIFF directory 0.");
+    }
+
+    uint32_t width = 0, height = 0;
+    uint16_t samplesPerPixel = 1, bitsPerSample = 8, sampleFormat = SAMPLEFORMAT_UINT;
+    uint16_t planarConfig = PLANARCONFIG_CONTIG;
+
     TIFFGetField(tiff, TIFFTAG_IMAGEWIDTH, &width);
     TIFFGetField(tiff, TIFFTAG_IMAGELENGTH, &height);
-    TIFFGetField(tiff, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
-    if (samplesPerPixel == 0) samplesPerPixel = 1; // Default if not specified
-    
-    // Read the TIFF data into a buffer
-    size_t bufferSize = width * height * samplesPerPixel;
-    std::vector<double> buffer(bufferSize);
-    
-    for (uint32_t row = 0; row < height; ++row) {
-        TIFFReadScanline(tiff, buffer.data() + (row * width * samplesPerPixel), row);
+    if (!TIFFGetField(tiff, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel))
+        samplesPerPixel = 1;
+    if (!TIFFGetField(tiff, TIFFTAG_BITSPERSAMPLE, &bitsPerSample))
+        bitsPerSample = 8;
+    if (!TIFFGetField(tiff, TIFFTAG_SAMPLEFORMAT, &sampleFormat))
+        sampleFormat = SAMPLEFORMAT_UINT;
+    if (!TIFFGetField(tiff, TIFFTAG_PLANARCONFIG, &planarConfig))
+        planarConfig = PLANARCONFIG_CONTIG;
+
+    // Parse frequency support from ImageDescription (preferred over raw file scan)
+    std::vector<double> frequencySupport = parseXAxisFromFile(filename);
+
+    // Count depth (number of directories)
+    // Move to last, count, then return to 0
+    TIFFSetDirectory(tiff, 0);
+    uint32_t totalPages = count_pages(tiff);
+    TIFFSetDirectory(tiff, 0); // rewind to first after counting
+
+    // Optionally, cap depth to frequencySupport length if your data is 1 slice per frequency
+    uint32_t depth = std::min<uint32_t>(totalPages, static_cast<uint32_t>(frequencySupport.size()));
+
+    // Allocate output: [width*height][depth]
+    std::vector<std::vector<double>> imageData(static_cast<size_t>(width) * height,
+                                               std::vector<double>(depth, 0.0));
+
+    // Prepare a byte buffer exactly the size libtiff expects
+    const tsize_t rowBytes = TIFFScanlineSize(tiff);
+    std::vector<uint8_t> rowBuf(static_cast<size_t>(rowBytes));
+
+    // Validate layout we can handle
+    if (planarConfig != PLANARCONFIG_CONTIG)
+    {
+        TIFFClose(tiff);
+        throw std::runtime_error("Unsupported PLANARCONFIG_SEPARATE; expected contiguous.");
     }
-    
-    TIFFClose(tiff);
-    
-    // 3. Determine if this is a 3D image based on the frequency support size
-    // and available data dimensions
-    uint32_t depth = frequencySupport.size();
-    std::variant<std::vector<std::vector<double>>, std::vector<std::vector<std::vector<double>>>> data;
-    
-    if (depth == 1 || (width * height * samplesPerPixel) == buffer.size()) {
-        // This is a 2D image (single slice)
-        std::vector<std::vector<double>> imageData(height, std::vector<double>(width));
-        for (uint32_t y = 0; y < height; ++y) {
-            for (uint32_t x = 0; x < width; ++x) {
-                imageData[y][x] = buffer[y * width + x];
+    if (samplesPerPixel < 1)
+        samplesPerPixel = 1; // be defensive
+
+    // Iterate over depth (directories)
+    for (uint32_t z = 0; z < depth; ++z)
+    {
+        if (!TIFFSetDirectory(tiff, z))
+        {
+            TIFFClose(tiff);
+            throw std::runtime_error("Failed to set TIFF directory " + std::to_string(z));
+        }
+
+        // (Re-read per-IFD tags in case they vary)
+        TIFFGetField(tiff, TIFFTAG_IMAGEWIDTH, &width);
+        TIFFGetField(tiff, TIFFTAG_IMAGELENGTH, &height);
+        TIFFGetField(tiff, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
+        TIFFGetField(tiff, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
+        TIFFGetField(tiff, TIFFTAG_SAMPLEFORMAT, &sampleFormat);
+        TIFFGetField(tiff, TIFFTAG_PLANARCONFIG, &planarConfig);
+
+        if (planarConfig != PLANARCONFIG_CONTIG)
+        {
+            TIFFClose(tiff);
+            throw std::runtime_error("Unsupported PLANARCONFIG_SEPARATE at z=" + std::to_string(z));
+        }
+
+        const tsize_t thisRowBytes = TIFFScanlineSize(tiff);
+        if (static_cast<tsize_t>(rowBuf.size()) != thisRowBytes)
+        {
+            rowBuf.assign(static_cast<size_t>(thisRowBytes), 0);
+        }
+
+        // Read each row
+        for (uint32_t y = 0; y < height; ++y)
+        {
+            if (TIFFReadScanline(tiff, rowBuf.data(), y) < 0)
+            {
+                TIFFClose(tiff);
+                throw std::runtime_error("TIFFReadScanline failed at z=" + std::to_string(z) +
+                                         ", y=" + std::to_string(y));
             }
-        }
-        data = imageData;
-    } else {
-        // This is a 3D image - we need to reshape it according to the Python logic
-        // In Python: data_reshaped = data.transpose(2, 1, 0).reshape(-1, shape)
-        
-        // First, calculate the correct depth
-        // In your Python code, this comes from data.shape[0]
-        if (buffer.size() % (width * height) == 0) {
-            depth = buffer.size() / (width * height);
-        } else {
-            // Fall back to frequency support size
-            depth = frequencySupport.size();
-        }
-        
-        // Create 3D structure
-        std::vector<std::vector<std::vector<double>>> imageData(
-            depth, std::vector<std::vector<double>>(
-                height, std::vector<double>(width)));
-        
-        // The reshaping is effectively taking each slice of the 3D volume
-        for (uint32_t z = 0; z < depth; ++z) {
-            for (uint32_t y = 0; y < height; ++y) {
-                for (uint32_t x = 0; x < width; ++x) {
-                    size_t index = z * (width * height) + y * width + x;
-                    if (index < buffer.size()) {
-                        imageData[z][y][x] = buffer[index];
+
+            // Interpret the row according to bits/sample format
+            // We read the FIRST sample if SamplesPerPixel > 1
+            const uint32_t pxCount = width;
+            switch (sampleFormat)
+            {
+            case SAMPLEFORMAT_IEEEFP:
+                if (bitsPerSample == 32)
+                {
+                    const float *row = reinterpret_cast<const float *>(rowBuf.data());
+                    for (uint32_t x = 0; x < pxCount; ++x)
+                    {
+                        uint32_t flat = y * width + x;
+                        imageData[flat][z] = static_cast<double>(row[x * samplesPerPixel + 0]);
                     }
                 }
+                else if (bitsPerSample == 64)
+                {
+                    const double *row = reinterpret_cast<const double *>(rowBuf.data());
+                    for (uint32_t x = 0; x < pxCount; ++x)
+                    {
+                        uint32_t flat = y * width + x;
+                        imageData[flat][z] = row[x * samplesPerPixel + 0];
+                    }
+                }
+                else
+                {
+                    TIFFClose(tiff);
+                    throw std::runtime_error("Unsupported IEEEFP BitsPerSample at z=" + std::to_string(z));
+                }
+                break;
+
+            case SAMPLEFORMAT_UINT:
+                if (bitsPerSample == 8)
+                {
+                    const uint8_t *row = reinterpret_cast<const uint8_t *>(rowBuf.data());
+                    for (uint32_t x = 0; x < pxCount; ++x)
+                    {
+                        uint32_t flat = y * width + x;
+                        imageData[flat][z] = static_cast<double>(row[x * samplesPerPixel + 0]);
+                    }
+                }
+                else if (bitsPerSample == 16)
+                {
+                    const uint16_t *row = reinterpret_cast<const uint16_t *>(rowBuf.data());
+                    for (uint32_t x = 0; x < pxCount; ++x)
+                    {
+                        uint32_t flat = y * width + x;
+                        imageData[flat][z] = static_cast<double>(row[x * samplesPerPixel + 0]);
+                    }
+                }
+                else if (bitsPerSample == 32)
+                {
+                    const uint32_t *row = reinterpret_cast<const uint32_t *>(rowBuf.data());
+                    for (uint32_t x = 0; x < pxCount; ++x)
+                    {
+                        uint32_t flat = y * width + x;
+                        imageData[flat][z] = static_cast<double>(row[x * samplesPerPixel + 0]);
+                    }
+                }
+                else
+                {
+                    TIFFClose(tiff);
+                    throw std::runtime_error("Unsupported UINT BitsPerSample at z=" + std::to_string(z));
+                }
+                break;
+
+            case SAMPLEFORMAT_INT:
+                if (bitsPerSample == 8)
+                {
+                    const int8_t *row = reinterpret_cast<const int8_t *>(rowBuf.data());
+                    for (uint32_t x = 0; x < pxCount; ++x)
+                    {
+                        uint32_t flat = y * width + x;
+                        imageData[flat][z] = static_cast<double>(row[x * samplesPerPixel + 0]);
+                    }
+                }
+                else if (bitsPerSample == 16)
+                {
+                    const int16_t *row = reinterpret_cast<const int16_t *>(rowBuf.data());
+                    for (uint32_t x = 0; x < pxCount; ++x)
+                    {
+                        uint32_t flat = y * width + x;
+                        imageData[flat][z] = static_cast<double>(row[x * samplesPerPixel + 0]);
+                    }
+                }
+                else if (bitsPerSample == 32)
+                {
+                    const int32_t *row = reinterpret_cast<const int32_t *>(rowBuf.data());
+                    for (uint32_t x = 0; x < pxCount; ++x)
+                    {
+                        uint32_t flat = y * width + x;
+                        imageData[flat][z] = static_cast<double>(row[x * samplesPerPixel + 0]);
+                    }
+                }
+                else
+                {
+                    TIFFClose(tiff);
+                    throw std::runtime_error("Unsupported INT BitsPerSample at z=" + std::to_string(z));
+                }
+                break;
+
+            default:
+                TIFFClose(tiff);
+                throw std::runtime_error("Unsupported SAMPLEFORMAT at z=" + std::to_string(z));
             }
         }
-        
-        data = imageData;
     }
-    
-    return {frequencySupport, data};
+
+    TIFFClose(tiff);
+    return {frequencySupport, imageData};
 }
 
-void plotSpectralData(const TiffImageData& tiffData) {
-    const auto& freqSupport = tiffData.frequencySupport;
+int countTiffPages(const std::string &filename)
+{
+    TIFF *tiff = TIFFOpen(filename.c_str(), "r");
+    if (!tiff)
+    {
+        throw std::runtime_error("Error opening TIFF file: " + filename);
+    }
 
-    if (std::holds_alternative<std::vector<std::vector<double>>>(tiffData.data)) {
-        // 2D data case
-        const auto& data = std::get<std::vector<std::vector<double>>>(tiffData.data);
+    int pageCount = 0;
+    do
+    {
+        ++pageCount;
+    } while (TIFFReadDirectory(tiff)); // Iterate through all directories (pages)
 
-        for (size_t i = 0; i < std::min<size_t>(5, data.size()); i++) {
-            plt::plot(freqSupport, data[i], {{"label", "Spectrum " + std::to_string(i + 1)}});
-        }
-        plt::title("Spectral Data");
-        plt::xlabel("Frequency (cm^{-1})");
-        plt::ylabel("Intensity");
-        plt::legend();
-        plt::grid(true);
-        plt::show();
-    } else {
-        // 3D data case
-        const auto& data = std::get<std::vector<std::vector<std::vector<double>>>>(tiffData.data);
+    TIFFClose(tiff);
+    return pageCount;
+}
 
-        for (int i = 0; i < 5 && i < static_cast<int>(data.size()); i++) {
-            std::vector<double> intensity;
-            for (size_t j = 0; j < freqSupport.size(); j++) {
-                intensity.push_back(data[i][0][j]); // Plot from the first row of each depth
+void writeImageDataToTxt(const std::string &filename, const TiffImageData &tiffData)
+{
+    std::ofstream outFile(filename);
+    if (!outFile.is_open())
+    {
+        throw std::runtime_error("Failed to open file: " + filename);
+    }
+
+    const auto &data = tiffData.imageData;
+
+    // Write each row of the 2D matrix to the file
+    for (const auto &row : data)
+    {
+        for (size_t i = 0; i < row.size(); ++i)
+        {
+            outFile << row[i];
+            if (i < row.size() - 1)
+            {
+                outFile << " "; // Separate values with a space
             }
-            plt::plot(freqSupport, intensity, {{"label", "Position " + std::to_string(i + 1)}});
         }
-        plt::title("3D Spectral Data (First 5 Spectra)");
-        plt::xlabel("Frequency (cm^{-1})");
-        plt::ylabel("Intensity");
-        plt::legend();
-        plt::grid(true);
-        plt::show();
+        outFile << "\n"; // Newline after each row
     }
+
+    outFile.close();
+    std::cout << "Image data written to " << filename << std::endl;
 }
 
-void plotTxtData(const std::vector<DataPoint>& data) {
+void checkCompression(const std::string &filename)
+{
+    TIFF *tiff = TIFFOpen(filename.c_str(), "r");
+    if (!tiff)
+    {
+        std::cerr << "Failed to open TIFF file: " << filename << std::endl;
+        return;
+    }
+
+    uint16_t compression;
+    if (TIFFGetField(tiff, TIFFTAG_COMPRESSION, &compression))
+    {
+        std::cout << "Compression type: ";
+        switch (compression)
+        {
+        case COMPRESSION_NONE:
+            std::cout << "None (uncompressed)" << std::endl;
+            break;
+        case COMPRESSION_LZW:
+            std::cout << "LZW" << std::endl;
+            break;
+        case COMPRESSION_JPEG:
+            std::cout << "JPEG" << std::endl;
+            break;
+        case COMPRESSION_PACKBITS:
+            std::cout << "PackBits" << std::endl;
+            break;
+        case COMPRESSION_DEFLATE:
+            std::cout << "Deflate (ZIP)" << std::endl;
+            break;
+        default:
+            std::cout << "Other (" << compression << ")" << std::endl;
+            break;
+        }
+    }
+    else
+    {
+        std::cout << "Compression tag not found. Assuming uncompressed." << std::endl;
+    }
+
+    TIFFClose(tiff);
+}
+
+void plotSpectralData(const TiffImageData &tiffData)
+{
+    const auto &freqSupport = tiffData.frequencySupport;
+    const auto &data = tiffData.imageData; // Assuming imageData is the 2D matrix
+
+    // Plot the first 5 spectra (or fewer if there are less than 5)
+    for (size_t i = 0; i < std::min<size_t>(5, data.size()); ++i)
+    {
+        plt::plot(freqSupport, data[i], {{"label", "Spectrum " + std::to_string(i + 1)}});
+    }
+
+    // Add plot labels and legend
+    plt::title("Spectral Data");
+    plt::xlabel("Frequency (cm^{-1})");
+    plt::ylabel("Intensity");
+    plt::legend();
+    plt::grid(true);
+    plt::show();
+}
+
+void plotTxtData(const std::vector<DataPoint> &data)
+{
     std::vector<double> x, y;
 
     // Separate the data into x and y vectors
-    for (const auto& point : data) {
+    for (const auto &point : data)
+    {
         x.push_back(point.x);
         y.push_back(point.y);
     }
@@ -271,40 +464,50 @@ void plotTxtData(const std::vector<DataPoint>& data) {
     plt::show();
 }
 
-int main() {
-    try {
-        // Test loading data from TXT file
-        std::vector<DataPoint> txtData = loadDataFromTxt("1_min_batch1.txt");
-        std::cout << "Loaded TXT data with " << txtData.size() << " data points." << std::endl;
+int main()
+{
+    try
+    {
+        // ---- TXT test (optional) ----
+        const std::string txtFile   = "1_min_batch1.txt";
+        const std::string tiffFile  = "1_3min_b3_50X50_spectral_mapping_1.tif";
+        const std::string outputTxt = "imageData_v3.txt";
 
-        // Plot the TXT data
-        plotTxtData(txtData);
+        std::vector<DataPoint> txtData = loadDataFromTxt(txtFile);
+        std::cout << "Loaded TXT data with " << txtData.size() << " data points from " << txtFile << ".\n";
 
-        const std::string tiffFile = "1_3min_b3_50X50_spectral_mapping_1.tif";
+        // plotTxtData(txtData); // optional
 
-        // List all tags
-        std::cout << "Inspecting TIFF file tags..." << std::endl;
-        listTiffTags(tiffFile.c_str());
+        // ---- TIFF info ----
+        int pageCount = countTiffPages(tiffFile);         // use the filename-based counter you already have
+        std::cout << "TIFF \"" << tiffFile << "\" has " << pageCount << " pages (depth candidates).\n";
 
-        // Print summary info
-        // printTiffInfo(tiffFile.c_str());
+        // checkCompression(tiffFile); // optional diagnostics
 
-        // Test loading data from TIFF file
-        TiffImageData tiffData = loadDataFromTiff("1_3min_b3_50X50_spectral_mapping_1.tif");
-        std::cout << "Loaded TIFF image with frequency support size: " << tiffData.frequencySupport.size() << std::endl;
+        // ---- Load 3D TIFF (depth = IFDs) ----
+        TiffImageData tiffData = loadDataFromTiff(tiffFile);
 
-        if (std::holds_alternative<std::vector<std::vector<double>>>(tiffData.data)) {
-            auto& imageData = std::get<std::vector<std::vector<double>>>(tiffData.data);
-            std::cout << "Loaded 2D TIFF image with data size: " << imageData.size() << "x" << imageData[0].size() << std::endl;
-        } else {
-            auto& imageData = std::get<std::vector<std::vector<std::vector<double>>>>(tiffData.data);
-            std::cout << "Loaded 3D TIFF image with data size: " << imageData.size() << "x" << imageData[0].size() << "x" << imageData[0][0].size() << std::endl;
+        const size_t nSpectra = tiffData.imageData.size();                 // width * height
+        const size_t depth    = (tiffData.frequencySupport.size());        // after loader caps to min(pages, freq)
+        std::cout << "Loaded TIFF stack as spectra matrix: "
+                  << nSpectra << " spectra × " << depth << " depth (freq bins).\n";
+
+        if (static_cast<size_t>(pageCount) != depth) {
+            std::cerr << "Warning: TIFF pages (" << pageCount
+                      << ") != frequency bins (" << depth
+                      << "). Using min(pages, bins) as depth.\n";
         }
 
-        // Plot the spectral data
-        plotSpectralData(tiffData);
-    } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+        // ---- Export & (optional) plot ----
+        writeImageDataToTxt(outputTxt, tiffData);
+        std::cout << "Wrote image data to: " << outputTxt << "\n";
+
+        plotSpectralData(tiffData); // optional
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
     }
 
     return 0;

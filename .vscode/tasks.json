@@ -5,14 +5,22 @@
             "label": "C/C++: clang++ build active file",
             "command": "/usr/bin/clang++",
             "args": [
-                "-std=c++17",
-                "-fcolor-diagnostics",
-                "-fansi-escape-codes",
-                "-g",
+                "-std=c++17", // From CFLAGS
+                "-O3",        // From WFLAGS
+                "-Wall",      // From WFLAGS
+                "-g",         // From DEBUG_FLAGS
+                "-I.",        // Include current directory
+                "-I/usr/local/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/include/python3.13", // From PYTHON_INCLUDE
+                "-I/usr/local/lib/python3.13/site-packages/numpy/_core/include", // From PYTHON_INCLUDE
                 "${file}",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
-                "-ltiff"
+                "-ltiff", // From LDFLAGS
+                "-L/usr/local/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/lib/python3.13/config-3.13-darwin", // From PYTHON_LIB_PATH
+                "-lpython3.13", // From PYTHON_LIB
+                "-lintl",       // From PYTHON_LIB_PATH
+                "-ldl",         // From PYTHON_LIB_PATH
+                "-framework", "CoreFoundation" // From PYTHON_LIB_PATH
             ],
             "options": {
                 "cwd": "${fileDirname}"

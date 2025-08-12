@@ -18,7 +18,7 @@ struct DataPoint {
 
 struct TiffImageData {
     std::vector<double> frequencySupport;
-    std::variant<std::vector<std::vector<double>>, std::vector<std::vector<std::vector<double>>>> data;
+    std::vector<std::vector<double>> imageData; // 2D matrix of spectral data
 };
 
 std::vector<DataPoint> loadDataFromTxt(const std::string& filename);
