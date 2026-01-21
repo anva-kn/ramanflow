@@ -1,0 +1,32 @@
+.DS_Store
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+spectral_demo
+
+# Local outputs
+imageData_*.txt
+*.log
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.python-version
+
+# CMake (if added later)
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile.user
+
