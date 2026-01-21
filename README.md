@@ -11,10 +11,10 @@ The target audience is researchers who are not familiar with programming, but ne
 
 
 What it should have:
-- [ ] Data loading
-  - [ ] Load data from .txt where 1st column is x-axis, 2nd column is y-axis
-  - [ ] Load data from .csv where 1st column is x-axis, and the rest are y-axis
-  - [ ] Load data from .xlsx where 1st column is x-axis, and the rest are y-axis
+- [x] Data loading
+  - [x] Load data from .txt where 1st column is x-axis, 2nd column is y-axis
+  - [x] Load data from .csv where 1st column is x-axis, and the rest are y-axis
+  - [x] Load data from .xlsx where 1st column is x-axis, and the rest are y-axis
 - [ ] Data preprocessing
   - [ ] Baseline correction
     - [ ] Polynomial fitting

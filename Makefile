@@ -1,49 +1,107 @@
 ##
-# Makefile for Ramanflow project
+# Makefile for Ramanflow project (SpectralIO)
 #
-# @version 0.1
-# For the next time add compilation of models.
+# Builds:
+#   - libSpectralIO.a          (static library)
+#   - libSpectralIO.so/.dylib  (shared library)
+# Optional:
+#   - spectral_demo            (if main.cpp is present)
+#
+# @version 0.2
 
-SHELL=/usr/bin/env sh
+SHELL := /usr/bin/env sh
 
-# Detect the operating system
+# -------- OS detection --------
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Linux)
-    CXX = g++
-    WFLAGS = -O3 -Wall -shared
-    PYTHON_INCLUDE = -I/usr/include/python3.x
-    PYTHON_LIB = -lpython3.x
+    CXX := g++
+    SO_EXT        := so
+    SHARED_FLAGS  := -shared -Wl,-soname,libSpectralIO.$(SO_EXT)
+    PYTHON_INCLUDE ?= -I/usr/include/python3.x
+    PYTHON_LIB     ?= -lpython3.x
+    PYTHON_LIB_PATH?=
 endif
+
 ifeq ($(UNAME_S),Darwin)
-    CXX = clang++
-    WFLAGS = -O3 -Wall
-    PYTHON_INCLUDE = -I/usr/local/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/include/python3.13 \
-    -I/usr/local/lib/python3.13/site-packages/numpy/_core/include
-    PYTHON_LIB = -lpython3.13
-    PYTHON_LIB_PATH = -L/usr/local/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/lib/python3.13/config-3.13-darwin \
-    -lintl -ldl -framework CoreFoundation
+    CXX := clang++
+    SO_EXT        := dylib
+    SHARED_FLAGS  := -dynamiclib -Wl,-install_name,@rpath/libSpectralIO.$(SO_EXT)
+    RPATH_FLAG    := -Wl,-rpath,@executable_path
+    PYTHON_INCLUDE ?= -I/usr/local/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/include/python3.13 \
+                      -I/usr/local/lib/python3.13/site-packages/numpy/_core/include
+    PYTHON_LIB     ?= -lpython3.13
+    PYTHON_LIB_PATH?= -L/usr/local/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/lib/python3.13/config-3.13-darwin \
+                      -lintl -ldl -framework CoreFoundation
 endif
 
-# Add Address Sanitizer flags
-# SANITIZE_FLAGS = -fsanitize=address -fno-omit-frame-pointer
+# -------- Flags --------
+# SANITIZE := -fsanitize=address -fno-omit-frame-pointer
 
-CFLAGS = -std=c++17 -I. $(PYTHON_INCLUDE)# $(SANITIZE_FLAGS)
-LDFLAGS = -ltiff $(PYTHON_LIB_PATH) $(PYTHON_LIB)# $(SANITIZE_FLAGS)
-DEBUG_FLAGS = -g -O0# $(SANITIZE_FLAGS)
+CXXFLAGS  := -std=c++17 -O3 -Wall -fPIC $(SANITIZE)
+CPPFLAGS  := -I. $(PYTHON_INCLUDE)
+LDFLAGS   := $(PYTHON_LIB_PATH) $(SANITIZE)
+LDLIBS    := -ltiff $(PYTHON_LIB)
 
-.PHONY: all debug clean
+DEBUG_FLAGS := -g -O0 $(SANITIZE)
 
-# Default target
-all: DataLoader
+# -------- Sources / Targets --------
+# Replace these with your actual file names/paths as needed
+LIB_NAME      := SpectralIO
+LIB_STATIC    := lib$(LIB_NAME).a
+LIB_SHARED    := lib$(LIB_NAME).$(SO_EXT)
 
-# DataLoader: DataLoader.cpp DataLoader.hpp
-#    $(CXX) $(CFLAGS) $(WFLAGS) -o DataLoader DataLoader.cpp $(LDFLAGS)
-DataLoader: DataLoader.cpp DataLoader.hpp tiff_inspector.cpp tiff_inspector.hpp
-	$(CXX) $(CFLAGS) $(WFLAGS) -o DataLoader DataLoader.cpp tiff_inspector.cpp $(LDFLAGS)
+LIB_SOURCES   := SpectralIO.cpp
+LIB_HEADERS   := SpectralIO.hpp
 
-debug: DataLoader.cpp DataLoader.hpp
-	$(CXX) $(CFLAGS) $(DEBUG_FLAGS) -o DataLoader_debug DataLoader.cpp $(LDFLAGS)
+# Optional plotting/object files can be added here if you want them in the lib:
+LIB_SOURCES  += SpectralPlotter.cpp
+LIB_HEADERS  += SpectralPlotter.hpp
 
+LIB_SOURCES  += SpectralPreprocessor.cpp
+LIB_HEADERS  += SpectralPreprocessor.hpp
+
+LIB_OBJECTS   := $(LIB_SOURCES:.cpp=.o)
+
+# Demo executable (optional) – only if you have main.cpp
+DEMO          := spectral_demo
+DEMO_SOURCES  := main.cpp
+DEMO_OBJECTS  := $(DEMO_SOURCES:.cpp=.o)
+
+.PHONY: all libs demo debug clean
+
+# Default: just build the libraries
+all: libs
+
+libs: $(LIB_STATIC) $(LIB_SHARED)
+
+# -------- Library builds --------
+$(LIB_STATIC): $(LIB_OBJECTS)
+	@echo "  AR    $@"
+	@ar rcs $@ $^
+
+$(LIB_SHARED): $(LIB_OBJECTS)
+	@echo "  LD    $@"
+	@$(CXX) $(CXXFLAGS) $(SHARED_FLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+# -------- Objects --------
+%.o: %.cpp $(LIB_HEADERS)
+	@echo "  CXX   $<"
+	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
+
+# -------- Demo (optional) --------
+# Build with: `make demo` (requires main.cpp present)
+demo: $(DEMO)
+
+$(DEMO): $(DEMO_OBJECTS) $(LIB_STATIC)
+	@echo "  LD    $@"
+	@$(CXX) $(CXXFLAGS) $(RPATH_FLAG) -o $@ $(DEMO_OBJECTS) -L. -l$(LIB_NAME) $(LDFLAGS) $(LDLIBS)
+
+# Debug build of libraries + demo
+debug: clean
+	$(MAKE) CXXFLAGS="$(CXXFLAGS) $(DEBUG_FLAGS)" all
+
+# -------- Clean --------
 clean:
-	rm -f DataLoader DataLoader_debug
+	@echo "  CLEAN"
+	@rm -f $(LIB_OBJECTS) $(DEMO_OBJECTS) $(LIB_STATIC) $(LIB_SHARED) $(DEMO)
